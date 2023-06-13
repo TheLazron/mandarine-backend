@@ -26,37 +26,43 @@
 //     }
 //   )
 // );
-import passport from "../lib/passport.js";
+// import passport from "../lib/passport.js";
 import { Request, Response, NextFunction } from "express";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 // Route for initiating the Google OAuth 2.0 authentication flow
-export const googleAuth = passport.authenticate("google", {
-  scope: ["profile", "email"],
-});
+// export const googleAuth = passport.authenticate("google", {
+//   scope: ["profile", "email"],
+// });
 
-// Route for handling the Google OAuth 2.0 callback
-export const googleAuthCallback = passport.authenticate(
-  "google",
-  { failureRedirect: "/login" },
-  (req: Request, res: Response) => {
-    // Redirect or respond with a success message
-    res.json({ message: "Signed in successfully" });
-  }
-);
+// // Route for handling the Google OAuth 2.0 callback
+// export const googleAuthCallback = passport.authenticate(
+//   "google",
+//   { failureRedirect: "/login" },
+//   (req: Request, res: Response) => {
+//     // Redirect or respond with a success message
+//     res.json({ message: "Signed in successfully" });
+//   }
+// );
 
-// Custom middleware to check if the user is authenticated
-export function isAuthenticated(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
+// // Custom middleware to check if the user is authenticated
+// export function isAuthenticated(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) {
+//   if (req.isAuthenticated()) {
+//     return next();
+//   }
 
-  // Redirect the user to the login page if not authenticated
-  res.json({ isAuth: true });
-}
+//   // Redirect the user to the login page if not authenticated
+//   res.json({ isAuth: true });
+// }
+
+// export function localLogin(req: Request, res: Response, next: NextFunction) {
+//   console.log(req.body);
+// }
 
 // import passport from 'passport';
 // // import LocalStrategy from 'passport-local';
@@ -103,3 +109,23 @@ export function isAuthenticated(
 //     });
 //   });
 // })); */
+
+const signupUser = async (req: Request, res: Response) => {
+  const { username, password, email } = req.body;
+
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password,
+        username,
+      },
+    });
+
+    res.json({ user });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export { signupUser };

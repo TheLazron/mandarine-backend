@@ -1,31 +1,80 @@
 import exp from "constants";
+import type { Request, Response, NextFunction } from "express";
 import passport from "passport";
-
+import { PrismaClient, User } from "@prisma/client";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as LocalStrategy } from "passport-local";
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID:
-        "881640054282-cir32cl5upgtkj0gab762ssr30h2ffeh.apps.googleusercontent.com",
-      clientSecret: "GOCSPX - Zww7JEGeh5jpXefIKzTG4ViX4jhQ",
-      callbackURL: "http://localhost:3010/auth/google/callback",
-    },
-    (accessToken, refreshToken, profile, done) => {
-      console.log("User Signed In With Google");
+const prisma = new PrismaClient();
 
-      console.log("access token from Google", accessToken);
-      console.log("RefreshToken", refreshToken);
-      console.log("user profile:", profile);
-      console.log("wth is done?", done);
+const localauth = new LocalStrategy(
+  async (username: any, password: any, done: any) => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          username,
+        },
+      });
 
-      // The user has been successfully authenticated
-      // You can perform additional actions here, such as creating a user account or storing the user's information
+      if (!user) {
+        return done(null, false, { message: "Incorrect username" });
+      }
 
-      // Call the done() callback to complete the authentication process
-      return done(null, profile);
+      if (user.password !== password) {
+        return done(null, false, { message: "Incorrect password" });
+      }
+
+      return done(null, user);
+    } catch (error) {
+      return done(error);
     }
-  )
+  }
 );
 
-export default passport;
+const serializeUser = (
+  user: Express.User,
+  done: (error: any, serializedUser: Express.User) => void
+): void => {
+  console.log("serializedUser", user);
+  done(null, user);
+};
+
+const deserializeUser = async (
+  user: User,
+  done: (error: any, deserializedUser: User) => void
+) => {
+  console.log("deserializeduser", user);
+
+  const foundUser = await prisma.user.findUnique({
+    where: {
+      id: user.id,
+    },
+  });
+
+  done(null, foundUser!);
+};
+
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+};
+
+const passportInit = () => {
+  return passport.initialize();
+};
+
+const passportSession = () => {
+  return passport.session();
+};
+
+export {
+  localauth,
+  passport,
+  serializeUser,
+  deserializeUser,
+  isAuthenticated,
+  passportInit,
+  passportSession,
+};
