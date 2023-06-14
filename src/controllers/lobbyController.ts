@@ -8,7 +8,23 @@ const createLobby = (req: Request, res: Response) => {
 
   socketHandler.createSocketRoom(id);
 
-  res.json({ message: "working" });
+  res.json({ message: "created lobby", id });
 };
 
-export { createLobby };
+const joinLobby = (req: Request, res: Response) => {
+  const { lobbyId } = req.params;
+
+  const socketHandler: SocketHandler = req.app.locals.socketHandler;
+  // const room = io.sockets.adapter.rooms.get(roomId);
+
+  const room = socketHandler.io.of("/").adapter.rooms.get(lobbyId);
+
+  if (room) {
+    socketHandler.joinRoom(lobbyId);
+    res.json({ message: "joined-room ", lobbyId });
+  } else {
+    res.json({ message: "room with id does not exist", lobbyId });
+  }
+};
+
+export { createLobby, joinLobby };

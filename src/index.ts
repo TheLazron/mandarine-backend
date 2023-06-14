@@ -21,7 +21,12 @@ dotenv.config();
 
 //express app and applying cors
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    origin: "http://localhost:3000",
+  })
+);
 
 //parsing data
 app.use(express.urlencoded({ extended: false }));
@@ -40,12 +45,22 @@ app.use(
 );
 //setting up server
 const server = new http.Server(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    credentials: true,
+  },
+});
 //setting up scoket.io server
 io.on("connection", (socket: Socket) => {
   console.log("a user connected");
   const socketHandler = new SocketHandler(io, socket);
   app.locals.socketHandler = socketHandler;
+});
+
+io.on("disconnect", (socket: Socket) => {
+  console.log("A user disconnected");
+  delete app.locals.socketHandler;
 });
 
 //passportjs setup
@@ -58,6 +73,12 @@ passport.deserializeUser(deserializeUser);
 //External Routers
 app.use(authRouter);
 app.use(lobbyRouter);
+
+app.get("/test", isAuthenticated, (req, res) => {
+  console.log(req.session);
+
+  res.json({ message: "you are authenticated" });
+});
 
 //starting sever
 server.listen(3010, () => {

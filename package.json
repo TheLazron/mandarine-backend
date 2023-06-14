@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon dist/index.js\"",
+    "dev": " npx concurrently \"npx tsc --watch\" \"nodemon dist/index.js\"",
     "build": "npx tsc"
   },
   "keywords": [],
@@ -15,7 +15,7 @@
   "dependencies": {
     "@prisma/client": "^4.15.0",
     "@types/node": "^20.1.4",
-    "concurrently": "^8.0.1",
+    "concurrently": "^8.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.1.4",
     "express": "^4.18.2",

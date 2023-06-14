@@ -25,12 +25,15 @@ class SocketHandler {
   createSocketRoom(roomId: string) {
     this.socket.join(roomId);
     // Send a message to the socket that joined the room
-    this.io.to(roomId).emit("message", `You have joined room ${roomId}`);
+
+    this.socket.emit("message", `You have joined room ${roomId}`);
+    this.io.to(roomId).emit("message", `new user joined lobby ${roomId}`);
   }
 
   joinRoom(roomId: string) {
     this.socket.join(roomId);
-    this.io.to(roomId).emit("message", `You have joined room ${roomId}`);
+    this.socket.emit("message", `You have joined room ${roomId}`);
+    this.io.to(roomId).emit("message", `new user joined lobby ${roomId}`);
   }
 }
 
