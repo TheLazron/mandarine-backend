@@ -8,8 +8,43 @@ generator client {
 }
 
 model User {
-    id           String        @id @default(uuid())
-    username         String? @unique
-    email String @unique
-    password String
+  id          String       @id @default(uuid())
+  username    String     @unique
+  email       String       @unique
+  password    String
+  joiningDate DateTime     @default(now())
+  Sessions    UserSession[]
+}
+
+model Session {
+  id         String       @id @default(uuid())
+  name       String
+  createdAt  DateTime     @default(now())
+  duration   Int
+  members    UserSession[]
+  rounds     Rounds[]
+}
+
+model UserSession {
+  id         String       @id @default(uuid())
+  user       User         @relation(fields: [userId], references: [id])
+  session    Session      @relation(fields: [sessionId], references: [id])
+  userId     String
+  sessionId  String
+  role       String
+}
+
+model Rounds {
+  id         String       @id @default(uuid())
+  session    Session      @relation(fields: [sessionId], references: [id])
+  sessionId  String
+  drawing    Drawing?     @relation(fields: [drawingId], references: [id])
+  drawingId    String?    @unique
+}
+
+model Drawing {
+  id        String       @id @default(uuid())
+  round     Rounds?      
+  roundId   String?      @unique
+  userId String @unique
 }

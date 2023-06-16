@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import generateRoomId from "../lib/generateId.js";
+import { getUsersBySessionId } from "../utils/redisUtils.js";
 
 class SocketHandler {
   io: Server;
@@ -22,18 +23,24 @@ class SocketHandler {
     // this.socket.emit("foo", "lesgoooo");
   }
 
-  createSocketRoom(roomId: string) {
+  async createSocketRoom(roomId: string) {
     this.socket.join(roomId);
     // Send a message to the socket that joined the room
+    const users = await getUsersBySessionId(roomId);
+    console.log("what is happening here", users);
 
     this.socket.emit("message", `You have joined room ${roomId}`);
     this.io.to(roomId).emit("message", `new user joined lobby ${roomId}`);
+    this.io.to(roomId).emit("newUser", { users: users });
   }
 
-  joinRoom(roomId: string) {
+  async joinRoom(roomId: string) {
     this.socket.join(roomId);
     this.socket.emit("message", `You have joined room ${roomId}`);
     this.io.to(roomId).emit("message", `new user joined lobby ${roomId}`);
+    const users = await getUsersBySessionId(roomId);
+    console.log(users);
+    this.io.to(roomId).emit("newUser", { users: users });
   }
 }
 

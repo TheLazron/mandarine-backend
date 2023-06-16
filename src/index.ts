@@ -5,7 +5,6 @@ import http from "http";
 import cors from "cors";
 import dotenv from "dotenv";
 import { Server, Socket } from "socket.io";
-import session from "express-session";
 import SocketHandler from "./socketHandlers/lobbyHandlers.js";
 import {
   deserializeUser,
@@ -17,6 +16,8 @@ import {
   serializeUser,
 } from "./lib/passport.js";
 import { authRouter } from "./routes/authenticationRouter.js";
+import User from "./models/User.js";
+import expressSessionConfig from "./controllers/serverController.js";
 dotenv.config();
 
 //express app and applying cors
@@ -33,16 +34,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 //setting up express session
-app.use(
-  session({
-    secret: "your-session-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 120 * 60 * 1000,
-    },
-  })
-);
+app.use(expressSessionConfig);
 //setting up server
 const server = new http.Server(app);
 const io = new Server(server, {
@@ -51,9 +43,21 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+io.engine.use(expressSessionConfig);
+
+//passportjs setup
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(localauth);
+passport.serializeUser(serializeUser);
+passport.deserializeUser(deserializeUser);
+
 //setting up scoket.io server
+
 io.on("connection", (socket: Socket) => {
-  console.log("a user connected");
+  // const currentUser = new User()
+  console.log("A user connected");
+
   const socketHandler = new SocketHandler(io, socket);
   app.locals.socketHandler = socketHandler;
 });
@@ -62,13 +66,6 @@ io.on("disconnect", (socket: Socket) => {
   console.log("A user disconnected");
   delete app.locals.socketHandler;
 });
-
-//passportjs setup
-app.use(passport.initialize());
-app.use(passport.session());
-passport.use(localauth);
-passport.serializeUser(serializeUser);
-passport.deserializeUser(deserializeUser);
 
 //External Routers
 app.use(authRouter);
