@@ -27,10 +27,10 @@ class User {
     console.log("Assiegned role of ", role, " to user ", this.username);
   }
 
-  joinSession(sessionId: string) {
+  async joinSession(sessionId: string) {
     this.session = sessionId;
     this.assignRole("student");
-    addUsertoSession(sessionId, this.email, this);
+    await addUsertoSession(sessionId, this.email, this);
     this.socket.joinRoom(sessionId);
     console.log("Joined session ", sessionId, " with user ", this.username);
     this.socket.io.to(sessionId).emit("message", {
@@ -39,11 +39,11 @@ class User {
     });
   }
 
-  createSession(sessionId: string) {
+  async createSession(sessionId: string) {
     this.session = sessionId;
     this.assignRole("teacher");
     this.socket.createSocketRoom(sessionId);
-    addUsertoSession(sessionId, this.email, this);
+    await addUsertoSession(sessionId, this.email, this);
     console.log("Created session ", sessionId, " with user ", this.username);
   }
 }

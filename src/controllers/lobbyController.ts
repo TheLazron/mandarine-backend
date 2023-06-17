@@ -1,28 +1,42 @@
 import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 import generateRoomId from "../lib/generateId.js";
 import SocketHandler from "../socketHandlers/lobbyHandlers.js";
 import User from "../models/User.js";
 import Session from "../models/Session.js";
 import generateNames from "../lib/generateNames.js";
 import generateName from "../lib/generateNames.js";
-const createLobby = (req: Request, res: Response) => {
+import { getRedisSession, getUsersBySessionId } from "../utils/redisUtils.js";
+import { create } from "domain";
+import { connect } from "http2";
+import { createRound } from "./roundController.js";
+
+const prisma = new PrismaClient();
+
+const createLobby = async (req: Request, res: Response) => {
   try {
+    //get user fromm session
     const reqSession = req.session as any;
     const user: User = reqSession.passport.user;
     const handler: SocketHandler = req.app.locals.socketHandler;
-    console.log(user.username, "created a room");
     const currentUser = new User(user.id, user.username, user.email, handler);
     const roomId = generateRoomId();
-    console.log("current user object", currentUser);
     const newDate = new Date();
     const session = new Session(roomId, generateName(), newDate);
-    session.createSession();
-    currentUser.createSession(roomId);
+    await session.createSession();
+    await currentUser.createSession(roomId);
 
     res.json({
       message: user.username + " created a room",
       id: currentUser.session,
     });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const getSession = (req: Request, res: Response) => {
+  try {
   } catch (err) {
     console.log(err);
   }
@@ -52,4 +66,50 @@ const joinLobby = (req: Request, res: Response) => {
   }
 };
 
-export { createLobby, joinLobby };
+const startSession = async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const { name } = req.body;
+    const session = await getRedisSession(sessionId);
+    session!.name = name;
+
+    console.log("fetched session", session);
+
+    const members = await getUsersBySessionId(sessionId);
+    console.log("fetched members", members);
+
+    if (members.length > 0) {
+      const savedSession = await prisma.session.create({
+        data: {
+          name: session!.name,
+          createdAt: new Date(session!.createdAt),
+          id: session!.id,
+          duration: 0,
+          members: {
+            create: members.map((member) => {
+              console.log("iteratedmember", member);
+
+              return {
+                role: member.role!,
+                user: {
+                  connect: {
+                    id: member.id,
+                  },
+                },
+              };
+            }),
+          },
+        },
+      });
+      await createRound(req, res);
+
+      res.json({ session: savedSession });
+    } else {
+      res.json({ message: "no members in session" });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export { createLobby, joinLobby, startSession };

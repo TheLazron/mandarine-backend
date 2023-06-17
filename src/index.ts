@@ -18,6 +18,7 @@ import {
 import { authRouter } from "./routes/authenticationRouter.js";
 import User from "./models/User.js";
 import expressSessionConfig from "./controllers/serverController.js";
+import roomRouter from "./routes/roundRouter.js";
 dotenv.config();
 
 //express app and applying cors
@@ -57,7 +58,8 @@ passport.deserializeUser(deserializeUser);
 io.on("connection", (socket: Socket) => {
   // const currentUser = new User()
   console.log("A user connected");
-
+  io.on("nextroom", (data) => {});
+  io.on("deleteroom", (data) => {});
   const socketHandler = new SocketHandler(io, socket);
   app.locals.socketHandler = socketHandler;
 });
@@ -70,6 +72,7 @@ io.on("disconnect", (socket: Socket) => {
 //External Routers
 app.use(authRouter);
 app.use(lobbyRouter);
+app.use(roomRouter);
 
 app.get("/test", isAuthenticated, (req, res) => {
   console.log(req.session);

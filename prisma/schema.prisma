@@ -26,12 +26,13 @@ model Session {
 }
 
 model UserSession {
-  id         String       @id @default(uuid())
   user       User         @relation(fields: [userId], references: [id])
   session    Session      @relation(fields: [sessionId], references: [id])
   userId     String
   sessionId  String
   role       String
+
+  @@id([userId, sessionId])
 }
 
 model Rounds {

@@ -1,11 +1,15 @@
 import SocketHandler from "../socketHandlers/lobbyHandlers.js";
-import redis, { createRedisSession } from "../utils/redisUtils.js";
+import redis, {
+  addRoundToRedisSession,
+  createRedisSession,
+} from "../utils/redisUtils.js";
 import User from "./User.js";
 
 class Session {
   id: string;
   name: string;
   createdAt: Date;
+  totalRounds: number = 0;
   members: User[];
 
   constructor(id: string, name: string, createdAt: Date) {
@@ -19,8 +23,14 @@ class Session {
     this.members.push(user);
   }
 
-  createSession() {
-    createRedisSession(this.id, this);
+  async createSession() {
+    await createRedisSession(this.id, this);
+  }
+
+  async addRound() {
+    this.totalRounds += 1;
+    console.log("added one round", this);
+    await addRoundToRedisSession(this.id, this);
   }
 }
 
