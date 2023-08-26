@@ -4,7 +4,6 @@ import generateRoomId from "../lib/generateId.js";
 import SocketHandler from "../socketHandlers/lobbyHandlers.js";
 import User from "../models/User.js";
 import Session from "../models/Session.js";
-import generateNames from "../lib/generateNames.js";
 import generateName from "../lib/generateNames.js";
 import { getRedisSession, getUsersBySessionId } from "../utils/redisUtils.js";
 import { create } from "domain";
@@ -22,13 +21,14 @@ const createLobby = async (req: Request, res: Response) => {
     const currentUser = new User(user.id, user.username, user.email, handler);
     const roomId = generateRoomId();
     const newDate = new Date();
-    const session = new Session(roomId, generateName(), newDate);
+    const session = new Session(roomId, generateName(), newDate, 0);
     await session.createSession();
     await currentUser.createSession(roomId);
 
     res.json({
       message: user.username + " created a room",
       id: currentUser.session,
+      sessionName: session.name,
     });
   } catch (err) {
     console.log(err);
@@ -60,6 +60,7 @@ const joinLobby = (req: Request, res: Response) => {
     res.json({
       message: user.username + " joined a room",
       id: currentUser.session,
+      sessionName: session.name,
     });
   } else {
     res.json({ message: "room with id does not exist", lobbyId });
@@ -70,8 +71,12 @@ const startSession = async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const { name } = req.body;
+    console.log("request to start sesssion by name ", name);
     const session = await getRedisSession(sessionId);
-    session!.name = name;
+    if (name != null) {
+      session!.name = name;
+      console.log("session!.name", session!.name);
+    }
 
     console.log("fetched session", session);
 
@@ -102,8 +107,9 @@ const startSession = async (req: Request, res: Response) => {
         },
       });
       await createRound(req, res);
-
-      res.json({ session: savedSession });
+      const handler: SocketHandler = req.app.locals.socketHandler;
+      console.log("prepping to broadcast message");
+      handler.startSession(sessionId, session!.name);
     } else {
       res.json({ message: "no members in session" });
     }
@@ -112,4 +118,31 @@ const startSession = async (req: Request, res: Response) => {
   }
 };
 
-export { createLobby, joinLobby, startSession };
+const getUserSessions = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    console.log("userId", userId);
+    const sessionsId = await prisma.userSession.findMany({
+      where: {
+        userId: userId,
+      },
+      select: {
+        sessionId: true,
+      },
+    });
+    //get all sessions with the sessionsIds
+    const sessions = await prisma.session.findMany({
+      where: {
+        id: {
+          in: sessionsId.map((session) => session.sessionId),
+        },
+      },
+    });
+    console.log("sessionsId", sessionsId);
+    res.json({ sessions });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export { createLobby, joinLobby, startSession, getUserSessions };

@@ -12,10 +12,11 @@ class Session {
   totalRounds: number = 0;
   members: User[];
 
-  constructor(id: string, name: string, createdAt: Date) {
+  constructor(id: string, name: string, createdAt: Date, totalRounds: number) {
     this.id = id;
     this.name = name;
     this.createdAt = createdAt;
+    this.totalRounds = totalRounds;
     this.members = [];
   }
 

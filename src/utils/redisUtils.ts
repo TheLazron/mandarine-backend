@@ -2,6 +2,7 @@ import { Redis } from "ioredis";
 import User from "../models/User.js";
 import Round from "../models/Round.js";
 import Session from "../models/Session.js";
+import { RedisRound, RedisSession } from "../types/modelTypes.js";
 
 const redis = new Redis();
 
@@ -28,7 +29,9 @@ export const getRedisSession = async (id: string) => {
   }
 };
 
-export const getRedisRound = async (id: string) => {
+export const getRedisRound = async (
+  id: string
+): Promise<RedisRound | undefined | null> => {
   try {
     const data = await redis.get(id);
     if (data) {
@@ -53,6 +56,22 @@ export const addUsertoSession = async (
     console.log("Temporary user instance stored in Redis");
     await redis.sadd(`${sessionId}:users`, email);
     console.log("User added to session in Redis");
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+export const updateRoundImage = async (roundId: string, imageUrl: string) => {
+  try {
+    const dataString = await redis.get(roundId);
+    if (dataString) {
+      const data = JSON.parse(dataString);
+      data.imageUrl = imageUrl;
+      await redis.set(roundId, JSON.stringify(data));
+      console.log("Round image updated in Redis for", roundId);
+    } else {
+      console.log("Round not found in Redis for", roundId);
+    }
   } catch (err) {
     console.error(err);
   }

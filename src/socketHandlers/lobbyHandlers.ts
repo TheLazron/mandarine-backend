@@ -1,5 +1,4 @@
 import { Server, Socket } from "socket.io";
-import generateRoomId from "../lib/generateId.js";
 import { getUsersBySessionId } from "../utils/redisUtils.js";
 
 class SocketHandler {
@@ -41,6 +40,38 @@ class SocketHandler {
     const users = await getUsersBySessionId(roomId);
     console.log(users);
     this.io.to(roomId).emit("newUser", { users: users });
+  }
+
+  async startSession(roomId: string, roomName: string) {
+    const room = this.io.of("/").adapter.rooms.get(roomId);
+
+    if (room) {
+      this.io.to(roomId).emit("start-session", "started session");
+      console.log("broadcasted startSession to students", roomId);
+    } else {
+      console.log(`Room ${roomName} does not exist.`);
+    }
+  }
+
+  async startRound(roomId: string) {
+    ``;
+    const room = this.io.of("/").adapter.rooms.get(roomId);
+    if (room) {
+      this.io.to(roomId).emit("start-round", "round started");
+      console.log("broadcasted startRound to students", roomId);
+    }
+  }
+  async deleteround(roomId: string) {
+    const room = this.io.of("/").adapter.rooms.get(roomId);
+    if (room) {
+      this.io.to(roomId).emit("delete-round", "round deleted");
+      console.log("broadcasted deleteRound to students", roomId);
+    }
+  }
+
+  async teacherImageBroadCast(roomId: string, imageUrl: string) {
+    this.io.to(roomId).emit("teacherImage", imageUrl);
+    console.log("broadcasted teacherImageUrl to students");
   }
 }
 

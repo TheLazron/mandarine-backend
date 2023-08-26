@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
-import User from "../models/User.js";
-import SocketHandler from "../socketHandlers/lobbyHandlers.js";
 const prisma = new PrismaClient();
 
 const signupUser = async (req: Request, res: Response) => {
@@ -23,25 +21,23 @@ const signupUser = async (req: Request, res: Response) => {
 };
 
 const loginUser = async (req: Request, res: Response) => {
-  // try{
+  try {
+    const fetchedUser = await prisma.user.findUnique({
+      where: {
+        username: req.body.username,
+      },
+    });
+    const sessionCount = await prisma.userSession.count({
+      where: {
+        userId: fetchedUser?.id,
+      },
+    });
 
-  //   // const fetchedUser = await prisma.user.findUnique({
-  //   //   where: {
-  //   //     email: req.body.email,
-  //   //   },
-  //   // });
-
-  // }
-  const session = req.session as any;
-  const user: User = session.passport.user;
-  const handler: SocketHandler = req.app.locals.socketHandler;
-  console.log("Got user", user);
-  const currentUser = new User(user.id, user.username, user.email, user.socket);
-  console.log(currentUser);
-
-  req.app.locals.currentUser = currentUser;
-
-  res.json({ user: currentUser });
+    res.json({ user: fetchedUser, sessionCount: sessionCount });
+    res.json({ user: fetchedUser });
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 export { signupUser, loginUser };

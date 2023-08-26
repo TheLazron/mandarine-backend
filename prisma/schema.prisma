@@ -39,13 +39,5 @@ model Rounds {
   id         String       @id @default(uuid())
   session    Session      @relation(fields: [sessionId], references: [id])
   sessionId  String
-  drawing    Drawing?     @relation(fields: [drawingId], references: [id])
-  drawingId    String?    @unique
-}
-
-model Drawing {
-  id        String       @id @default(uuid())
-  round     Rounds?      
-  roundId   String?      @unique
-  userId String @unique
+  drawingUrl    String?    @unique
 }

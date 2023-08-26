@@ -1,4 +1,8 @@
-import { createRedisRound, deleteRedisRound } from "../utils/redisUtils.js";
+import {
+  createRedisRound,
+  deleteRedisRound,
+  updateRoundImage,
+} from "../utils/redisUtils.js";
 import Session from "./Session.js";
 
 class Round {
@@ -11,8 +15,12 @@ class Round {
     this.sessionId = sessionId;
   }
 
-  async createRound(sessionId: string) {
+  async createRound() {
     await createRedisRound(this.id, this);
+  }
+
+  async addImage(imageUrl: string) {
+    await updateRoundImage(this.id, imageUrl);
   }
 
   async deleteRound() {

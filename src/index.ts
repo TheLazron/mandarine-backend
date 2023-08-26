@@ -19,6 +19,7 @@ import { authRouter } from "./routes/authenticationRouter.js";
 import User from "./models/User.js";
 import expressSessionConfig from "./controllers/serverController.js";
 import roomRouter from "./routes/roundRouter.js";
+import imageRouter from "./routes/imageRouter.js";
 dotenv.config();
 
 //express app and applying cors
@@ -33,9 +34,17 @@ app.use(
 //parsing data
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(express.raw({ type: "application/octet-stream" }));
 
-//setting up express session
 app.use(expressSessionConfig);
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(localauth);
+passport.serializeUser(serializeUser);
+passport.deserializeUser(deserializeUser);
+//setting up express session
+
 //setting up server
 const server = new http.Server(app);
 const io = new Server(server, {
@@ -44,22 +53,31 @@ const io = new Server(server, {
     credentials: true,
   },
 });
-io.engine.use(expressSessionConfig);
+// io.engine.use(expressSessionConfig);
+const wrap = (middleware: any) => (socket: any, next: any) =>
+  middleware(socket.request, {}, next);
+
+io.use(wrap(expressSessionConfig));
+io.use(wrap(passport.initialize()));
+io.use(wrap(passport.session()));
 
 //passportjs setup
-app.use(passport.initialize());
-app.use(passport.session());
-passport.use(localauth);
-passport.serializeUser(serializeUser);
-passport.deserializeUser(deserializeUser);
+
+io.use((socket, next) => {
+  const a: any = socket.request;
+  if (a.user) {
+    next();
+  } else {
+    next(new Error("unauthorized"));
+  }
+});
 
 //setting up scoket.io server
 
 io.on("connection", (socket: Socket) => {
   // const currentUser = new User()
-  console.log("A user connected");
-  io.on("nextroom", (data) => {});
-  io.on("deleteroom", (data) => {});
+  console.log(`new connection ${socket.id}`);
+
   const socketHandler = new SocketHandler(io, socket);
   app.locals.socketHandler = socketHandler;
 });
@@ -73,6 +91,7 @@ io.on("disconnect", (socket: Socket) => {
 app.use(authRouter);
 app.use(lobbyRouter);
 app.use(roomRouter);
+app.use(imageRouter);
 
 app.get("/test", isAuthenticated, (req, res) => {
   console.log(req.session);
